@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\ProfileController;
 use Illuminate\Foundation\Application;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -15,7 +16,7 @@ Route::get('/', function () {
 });
 
 Route::get('/dashboard', function () {
-    return Inertia::render('Dashboard');
+    return Inertia::render('Dashboard',['user' => Auth::user()]);
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware('auth')->group(function () {
@@ -23,5 +24,19 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
+
+
+Route::get('/test/{id}',function($id) {
+    return Inertia::render('Post/PostDetails', [
+        'id' => $id,
+    ]);
+})->middleware(['auth'])->name('post.view');
+
+Route::get('/post',function() {
+    return Inertia::render('Post/UserPosts',[
+        'user' =>  Auth::user()
+    ]);
+})->name('user.post');
+
 
 require __DIR__.'/auth.php';
