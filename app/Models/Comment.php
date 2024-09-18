@@ -27,4 +27,14 @@ class Comment extends Model
         return $this->belongsToMany(User::class, 'comment_likes')
                     ->withTimestamps();
     }
+
+    public function parent()
+    {
+        return $this->belongsTo(Comment::class, 'parent_id');
+    }
+
+    public function children()
+    {
+        return $this->hasMany(Comment::class, 'parent_id')->with('children'); // Eager load recursively
+    }
 }

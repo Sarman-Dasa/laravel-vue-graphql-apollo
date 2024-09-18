@@ -26,7 +26,7 @@ Route::middleware('auth')->group(function () {
 });
 
 
-Route::get('/test/{id}',function($id) {
+Route::get('/post/{id}',function($id) {
     return Inertia::render('Post/PostDetails', [
         'id' => $id,
     ]);

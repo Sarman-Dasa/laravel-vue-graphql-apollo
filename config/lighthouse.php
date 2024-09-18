@@ -40,6 +40,10 @@ return [
 
             // Logs every incoming GraphQL query.
             // Nuwave\Lighthouse\Http\Middleware\LogGraphQLQueries::class,
+
+            // Auth middleware to ensure the user is authenticated
+            'auth',
+            'web'
         ],
 
         /*

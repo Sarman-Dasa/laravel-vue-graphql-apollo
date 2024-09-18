@@ -18,9 +18,7 @@ type Query {
       name: String @where(operator: "like")
     ): [User!]! @paginate(defaultCount: 10)
   
-    post(
-      id: ID @eq
-    ): Post @find(model: "App\\Models\\Post") 
+    post(id: ID!): Post @field(resolver: "App\\GraphQL\\Mutations\\PostData@resolve")
 
     posts(
       title: String @where(operator: "like")
@@ -75,7 +73,10 @@ type Comment {
     "The user who made the comment."
     user: User @belongsTo(relation: "user")
     likeCount: Int! @count(relation: "likes")
-    hasLiked(user_id: ID): Boolean! @field(resolver: "App\\GraphQL\\Mutations\\CommentLikeStatus")
+    hasLiked: Boolean! @field(resolver: "App\\GraphQL\\Mutations\\CommentLikeStatus")
+    parent: Comment @belongsTo(relation: "parent")
+    children: [Comment!]! @hasMany(relation: "children")
+    parent_id: ID
 }
 
 
@@ -87,7 +88,7 @@ type Mutation {
   createPost(input: CreatePostInput @spread):Post @create(model: "App\\Models\\Post")
   updatePost(id:ID!, input: UpdatePostInput @spread):Post @update(model: "App\\Models\\Post")
   deletePost(id: ID!): Post @field(resolver: "App\\GraphQL\\Mutations\\DeleteuserPostMutation")
-  likeComment(comment_id: ID!,user_id:ID!): Comment @field(resolver: "App\\GraphQL\\Mutations\\LikeCommentMutation")
+  likeComment(comment_id: ID!): Comment @field(resolver: "App\\GraphQL\\Mutations\\LikeCommentMutation")
   createPostComment(input:CreateCommentInput @spread) :Comment @create
 }
 
@@ -118,4 +119,5 @@ input CreateCommentInput {
   user_id: ID! @rules(apply: ["exists:users,id"])
   post_id: ID! @rules(apply: ["exists:posts,id"])
   comment: String! @rules(apply: ["required"])
+  parent_id: ID @rules(apply:["nullable","exists:comments,id"])
 }

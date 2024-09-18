@@ -10,9 +10,14 @@ import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { ZiggyVue } from '../../vendor/tightenco/ziggy';
 import { ApolloClient, createHttpLink, InMemoryCache } from '@apollo/client/core'; // Apollo dependencies
 
+const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 // Apollo Client setup
 const httpLink = createHttpLink({
   uri: 'http://localhost:8000/graphql', // Your GraphQL API endpoint
+  credentials: 'include',
+  headers: {
+    'X-CSRF-TOKEN': csrfToken,
+  },
 });
 
 const cache = new InMemoryCache(); // Apollo in-memory cache
