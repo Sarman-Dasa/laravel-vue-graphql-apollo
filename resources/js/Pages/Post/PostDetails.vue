@@ -3,16 +3,19 @@
         <div class="home p-2">
             <NotFound v-if="result == null" />
             <PostLayout v-if="result?.post" :post="result.post" />
-            <!-- {{ result?.post?.commentsList && parentChildCommentData.length }} -->
             <CommentsList
                 v-if="parentChildCommentData.length"
                 :comments="parentChildCommentData"
                 :isCommentAdded="isClearForm"
                 @likeDisLike="handleCommentLikeDisLike"
-                @addComment="AddNewPostComment"
+                @addComment="addNewPostComment"
+                @deleteComment="commentDelete"
             />
 
-            <AddComment @add-comment="AddNewPostComment" :isClearForm="isClearForm"/>
+            <AddComment
+                @add-comment="addNewPostComment"
+                :isClearForm="isClearForm"
+            />
         </div>
     </AuthenticatedLayout>
 </template>
@@ -23,81 +26,80 @@ import PostLayout from "@/Components/PostLayout.vue";
 import CommentsList from "@/Components/CommentsList.vue";
 import { useMutation, useQuery } from "@vue/apollo-composable";
 import gql from "graphql-tag";
-import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
+import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 import { usePage } from "@inertiajs/vue3";
 import AddComment from "@/Components/AddComment.vue";
 
 const props = defineProps(["id"]);
 const post = ref([]);
-const commentsList  = ref([]);
+const commentsList = ref([]);
 const userId = usePage().props.auth.user.id;
 const isClearForm = ref(false);
 
-
 const parentChildCommentData = computed(() => {
-  const list = result.value?.post?.commentsList
-
-  if(!list) {
-    return
-  }
-  const parentChildPair = [];
-  const idToObjectMap = {};
-
-  // Create a shallow copy of the list to avoid immutability issues
-  const mutableList = list.map(item => ({ ...item, children: [] }));
-
-  mutableList.forEach(item => {
-    idToObjectMap[item.id] = item;
-  });
-
-  mutableList.forEach(item => {
-    if (item.parent_id !== null) {
-      const parent = idToObjectMap[item.parent_id];
-      if (parent) {
-        parent.children.push(item);
-      }
-    } else {
-      parentChildPair.push(item);
+    const list = result.value?.post?.commentsList;
+    if (!list) {
+        return;
     }
-  });
+    const parentChildPair = [];
+    const idToObjectMap = {};
 
-  return parentChildPair;
+    // Create a shallow copy of the list to avoid immutability issues
+    const mutableList = list.map((item) => ({ ...item, children: [],childCount: 0 }));
+
+    mutableList.forEach((item) => {
+        idToObjectMap[item.id] = item;
+    });
+
+    mutableList.forEach((item) => {
+        if (item.parent_id !== null) {
+            const parent = idToObjectMap[item.parent_id];
+            if (parent) {
+                parent.children.push(item);
+                parent.childCount += 1; 
+            }
+        } else {
+            parentChildPair.push(item);
+        }
+    });
+
+    return parentChildPair;
 });
 
 const GET_POST_DETAILS = gql`
-  query post($id: ID!) {
-    post(id: $id) {
-      id
-      title
-      body
-      created_at
-      commentCount
-      commentsList {
-        ...CommentFields
-      }
+    query post($id: ID!) {
+        post(id: $id) {
+            id
+            title
+            body
+            created_at
+            commentCount
+            commentsList {
+                ...CommentFields
+            }
+        }
     }
-  }
-  fragment CommentFields on Comment {
-    id
-    comment
-    likeCount
-    created_at
-    hasLiked
-    parent_id
-    user {
-      id
-      name
+    fragment CommentFields on Comment {
+        id
+        comment
+        likeCount
+        created_at
+        hasLiked
+        parent_id
+        user {
+            id
+            name
+        }
     }
-  }
 `;
 
 const { result, loading, error } = useQuery(GET_POST_DETAILS, {
     id: props.id,
 });
 setTimeout(() => {
-    post.value = result?.value?.post
-    commentsList.value =  result?.value?.post?.commentsList
-}, 200);    
+    post.value = result?.value?.post;
+    commentsList.value = result?.value?.post?.commentsList;
+}, 200);
 
 // Define your mutation
 const LIKE_COMMENT_MUTATION = gql`
@@ -111,10 +113,16 @@ const LIKE_COMMENT_MUTATION = gql`
     }
 `;
 
-
 const ADD_POST_COMMENT = gql`
-    mutation($userId:ID!, $postId:ID!, $comment:String!, $parentId:ID) {
-        createPostComment(input:{user_id:$userId post_id:$postId comment:$comment parent_id:$parentId}) {
+    mutation ($userId: ID!, $postId: ID!, $comment: String!, $parentId: ID) {
+        createPostComment(
+            input: {
+                user_id: $userId
+                post_id: $postId
+                comment: $comment
+                parent_id: $parentId
+            }
+        ) {
             id
             comment
             likeCount
@@ -124,6 +132,16 @@ const ADD_POST_COMMENT = gql`
             }
         }
     }
+`;
+
+
+const DELETE_POST_COMMENT = gql`
+    mutation($id:ID!) {
+        deleteComment(id:$id) {
+            id
+            comment
+        }
+    }       
 `
 
 // const { mutate: likeComment } = useMutation(LIKE_COMMENT_MUTATION);
@@ -133,25 +151,27 @@ const { mutate: likeComment } = useMutation(LIKE_COMMENT_MUTATION, {
         // Read the existing data from the cache
         const existingData = cache.readQuery({
             query: GET_POST_DETAILS,
-            variables: { id: props.id }
+            variables: { id: props.id },
         });
 
         if (!existingData || !existingData.post) return;
 
         // Update the commentsList with the new likeComment data
-        const updatedCommentsList = existingData.post.commentsList.map(comment => {
-            if (comment.id === likeComment.id) {
-                // Update the specific comment with new like data
-                return {
-                    ...comment,
-                    likeCount: likeComment.likeCount,
-                    hasLiked: likeComment.hasLiked
-                };
+        const updatedCommentsList = existingData.post.commentsList.map(
+            (comment) => {
+                if (comment.id === likeComment.id) {
+                    // Update the specific comment with new like data
+                    return {
+                        ...comment,
+                        likeCount: likeComment.likeCount,
+                        hasLiked: likeComment.hasLiked,
+                    };
+                }
+                return comment;
             }
-            return comment;
-        });
+        );
 
-        console.log("updatedCommentsList",updatedCommentsList);
+        console.log("updatedCommentsList", updatedCommentsList);
         commentsList.value = updatedCommentsList;
         // Write the updated data back to the cache
         cache.writeQuery({
@@ -160,20 +180,18 @@ const { mutate: likeComment } = useMutation(LIKE_COMMENT_MUTATION, {
             data: {
                 post: {
                     ...existingData.post,
-                    commentsList: updatedCommentsList
-                }
-            }
+                    commentsList: updatedCommentsList,
+                },
+            },
         });
-    }
+    },
 });
 
-
-
-const { mutate: addComment } = useMutation(ADD_POST_COMMENT,{
+const { mutate: addComment } = useMutation(ADD_POST_COMMENT, {
     update: (cache, { data: { createPostComment } }) => {
         const existingData = cache.readQuery({
-            query:GET_POST_DETAILS,
-            variables: { id: props.id}
+            query: GET_POST_DETAILS,
+            variables: { id: props.id },
         });
 
         const newData = {
@@ -182,15 +200,15 @@ const { mutate: addComment } = useMutation(ADD_POST_COMMENT,{
                 ...existingData.post,
                 commentsList: [
                     ...existingData.post.commentsList,
-                    createPostComment
-                ]
-            }
+                    createPostComment,
+                ],
+            },
         };
-        
+
         cache.writeQuery({
             query: GET_POST_DETAILS,
-            variables: { id: props.id, userId},
-            data: newData
+            variables: { id: props.id, userId },
+            data: newData,
         });
     },
 });
@@ -205,56 +223,39 @@ const handleCommentLikeDisLike = (id) => {
         });
 };
 
-
-const AddNewPostComment = (event) => {
-  console.log('event: ', event);
+const addNewPostComment = (event) => {
+    console.log("event: ", event);
     addComment({
-        userId:userId,
-        postId:props.id,
-        comment:event.comment,
-        parentId:event.parentId
+        userId: userId,
+        postId: props.id,
+        comment: event.comment,
+        parentId: event.parentId,
+    })
+        .then((response) => {
+            console.log("response: ", response);
+            isClearForm.value = !isClearForm.value;
+        })
+        .catch((error) => {
+            console.error("Mutation error:", error);
+        });
+};
+
+const {mutate: deleteComment } = useMutation(DELETE_POST_COMMENT, {
+    update: (cache, { data: { deleteComment }}) => {
+        cache.evict({id:cache.identify(deleteComment)})
+    }
+});
+
+const commentDelete = (id) => {
+    deleteComment({
+        id:id
     }).then((response) => {
         console.log('response: ', response);
-        isClearForm.value = !isClearForm.value;
+        
     })
     .catch((error) => {
         console.error("Mutation error:", error);
     });
+
 }
-
-
-    /** Convert data as parent child pair */
-async function convertToParentChildData(list, id = 'id', parent_id = 'parent_id') {
-  console.log('list: ', list);
-  const parentChildPair = [];
-  const idToObjectMap = {};
-
-  // Create a shallow copy of the list to avoid immutability issues
-  const mutableList = list.map(item => ({ ...item, children: [] }));
-
-  mutableList.forEach(item => {
-    idToObjectMap[item[id]] = item;
-  });
-
-  mutableList.forEach(item => {
-    if (item[parent_id] !== null) {
-      const parent = idToObjectMap[item[parent_id]];
-      if (parent) {
-        parent.children.push(item);
-      }
-    } else {
-      parentChildPair.push(item);
-    }
-  });
-
-  console.log("parentChildPair", parentChildPair);
-  return parentChildPair;
-}
-
-
-
-
-
-
 </script>
-

@@ -4,7 +4,7 @@
         class="bg-light p-2 mt-3 container"
     >
         <div>
-            <label v-show="props.parentId" for="content" class="form-label text-dark"
+            <label v-show="!props.parentId" for="content" class="form-label text-dark"
                 >Add a comment:</label
             >
             <textarea
