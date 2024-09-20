@@ -68,15 +68,14 @@ type Comment {
     comment: String!
     created_at: DateTime
     updated_at: DateTime
-    "The post this comment belongs to."
     posts: Post @belongsTo(relation: "post")
-    "The user who made the comment."
     user: User @belongsTo(relation: "user")
     likeCount: Int! @count(relation: "likes")
     hasLiked: Boolean! @field(resolver: "App\\GraphQL\\Mutations\\CommentLikeStatus")
     parent: Comment @belongsTo(relation: "parent")
     children: [Comment!]! @hasMany(relation: "children")
     parent_id: ID
+    editable: Boolean! @field(resolver: "App\\GraphQL\\Mutations\\EditableComment")
 }
 
 

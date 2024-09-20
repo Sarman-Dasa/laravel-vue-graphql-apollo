@@ -52,7 +52,7 @@
                     <span v-if="loginUserId == comment.user.id" class="flex">
                         <template v-if="editCommentId !== comment.id">
                                <!-- Edit Icon -->
-                               <span class="cursor-pointer mr-2" @click="$emit('setEditCommentId', comment.id)">
+                               <span v-if="comment.editable" class="cursor-pointer mr-2" @click="$emit('setEditCommentId', comment.id)">
                                 <EditIcon />
                             </span>
                             <!-- Delete Icon -->

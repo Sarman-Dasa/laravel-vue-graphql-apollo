@@ -12,7 +12,7 @@ class CommentLikeStatus
     public function __invoke(Comment $comment, $args)
     {
         $user = Auth::user();
-        Log::info("Session Data: " . json_encode($user));
+        // Log::info("Session Data: " . json_encode($user));
 
         // $user = User::findOrFail($args['user_id']);
         if (!$user) {

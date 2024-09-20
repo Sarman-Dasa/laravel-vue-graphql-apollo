@@ -87,6 +87,7 @@ const GET_POST_DETAILS = gql`
         created_at
         hasLiked
         parent_id
+        editable
         user {
             id
             name
