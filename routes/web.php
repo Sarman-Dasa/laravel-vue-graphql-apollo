@@ -26,17 +26,30 @@ Route::middleware('auth')->group(function () {
 });
 
 
-Route::get('/post/{id}',function($id) {
-    return Inertia::render('Post/PostDetails', [
-        'id' => $id,
-    ]);
-})->middleware(['auth'])->name('post.view');
+Route::middleware(['auth'])->group(function () {
+    Route::middleware(['auth', 'verified'])->group(function () {
+        Route::get('/posts', function() {
+            return Inertia::render('Post/List', [
+                'user' => Auth::user()
+            ]);
+        })->name('posts');
 
-Route::get('/post',function() {
-    return Inertia::render('Post/UserPosts',[
-        'user' =>  Auth::user()
-    ]);
-})->name('user.post');
+        Route::get('/post/{id}', function($id) {
+            return Inertia::render('Post/PostDetails', [
+                'id' => $id,
+            ]);
+        })->name('post.view');
+    });
+
+    Route::get('/post', function() {
+        return Inertia::render('Post/UserPosts', [
+            'user' => Auth::user()
+        ]);
+    })->name('user.post');
+});
+
+
+
 
 
 require __DIR__.'/auth.php';

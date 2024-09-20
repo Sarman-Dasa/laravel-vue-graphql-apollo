@@ -91,6 +91,7 @@ type Mutation {
   likeComment(comment_id: ID!): Comment @field(resolver: "App\\GraphQL\\Mutations\\LikeCommentMutation")
   createPostComment(input:CreateCommentInput @spread) :Comment @create
   deleteComment(id:ID! @eq): Comment @delete
+  updateComment(id: ID!,comment:String!): Comment @field(resolver: "App\\GraphQL\\Mutations\\UpdateComment")
 }
 
 input createNewuser {
@@ -113,7 +114,6 @@ input CreatePostInput {
 input UpdatePostInput {
   title: String! @rules(apply: ["required"])
   body: String! @rules(apply: ["required"])
-  user_id: ID! @rules(apply: ["exists:users,id"])
 }
 
 input CreateCommentInput {

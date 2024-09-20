@@ -4,12 +4,13 @@
             <NotFound v-if="result == null" />
             <PostLayout v-if="result?.post" :post="result.post" />
             <CommentsList
-                v-if="parentChildCommentData.length"
+                v-if="parentChildCommentData?.length"
                 :comments="parentChildCommentData"
                 :isCommentAdded="isClearForm"
                 @likeDisLike="handleCommentLikeDisLike"
                 @addComment="addNewPostComment"
                 @deleteComment="commentDelete"
+                @updateComment="updateCommentData"
             />
 
             <AddComment
@@ -144,6 +145,19 @@ const DELETE_POST_COMMENT = gql`
     }       
 `
 
+const UPDATE_POST_COMMENT = gql`
+    mutation($id:ID!,$comment:String!) {
+        updateComment(id:$id comment:$comment) {
+            id
+            comment
+            likeCount
+            hasLiked
+            user {
+                id
+            }
+        }
+    }
+`
 // const { mutate: likeComment } = useMutation(LIKE_COMMENT_MUTATION);
 
 const { mutate: likeComment } = useMutation(LIKE_COMMENT_MUTATION, {
@@ -212,6 +226,17 @@ const { mutate: addComment } = useMutation(ADD_POST_COMMENT, {
         });
     },
 });
+
+const { mutate :updateComment} = useMutation(UPDATE_POST_COMMENT,{
+    // update: (cache, { data: {  updateComment }}) => {
+    //     const existingData = cache.readQuery({
+    //         query:GET_POST_DETAILS,
+    //         variables: { id:props.id }
+    //     });
+    // }
+    refetchQueries: [{ query: GET_POST_DETAILS,variables: { id: props.id  } }],
+    awaitRefetchQueries: true
+});
 // Function to handle Like/Dislike
 const handleCommentLikeDisLike = (id) => {
     likeComment({ commentId: id, userId: userId })
@@ -252,6 +277,21 @@ const commentDelete = (id) => {
     }).then((response) => {
         console.log('response: ', response);
         
+    })
+    .catch((error) => {
+        console.error("Mutation error:", error);
+    });
+
+}
+
+const updateCommentData = (data) => {
+    updateComment({
+        id:data.commentId,
+        comment:data.comment
+    })
+    .then((response) => {
+        console.log("response: ", response);
+        isClearForm.value = !isClearForm.value;
     })
     .catch((error) => {
         console.error("Mutation error:", error);

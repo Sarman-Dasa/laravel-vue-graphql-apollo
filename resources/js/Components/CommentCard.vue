@@ -1,7 +1,9 @@
 <template>
     <div class="comment-card-container">
         <div class="comment__card">
-            <div class="d-flex justify-content-between align-items-center text-secondary small">
+            <div
+                class="d-flex justify-content-between align-items-center text-secondary small"
+            >
                 <!-- Left side: Image and Name -->
                 <div class="d-flex align-items-center">
                     <img
@@ -15,14 +17,71 @@
                 </div>
 
                 <!-- Right side: Created Date and Delete Icon -->
-                <div class="d-flex align-items-center">
+                <!-- <div class="d-flex align-items-center">
                     <p class="mb-0 mr-2">{{ comment.created_at }}</p>
-                    <span v-if="loginUserId == comment.user.id" class="cursor-pointer" @click="deleteComment(comment.id)"><DeleteIcon /></span>
+                    <span v-if="loginUserId == comment.user.id" class="d-flex">
+                        <span
+                            v-if="editCommentId != comment.id"
+                            class="cursor-pointer"
+                            @click="deleteComment(comment.id)"
+                            ><DeleteIcon
+                        /></span>
+                        <span
+                            v-else
+                            class="cursor-pointer ml-2"
+                            @click="emits('close')"
+                            ><CloseIcon
+                        /></span>
+                        <span
+                            v-if="editCommentId != comment.id"
+                            class="cursor-pointer ml-2"
+                            @click="emits('setEditCommentId', comment.id)"
+                            ><EditIcon
+                        /></span>
+                        <span
+                            v-else
+                            class="cursor-pointer ml-2"
+                            @click="emits('updateComment', comment.comment)"
+                            ><CheckIcon
+                        /></span>
+                    </span>
+                </div> -->
+
+                <div class="flex items-center">
+                    <p class="mb-0 mr-2">{{ comment.created_at }}</p>
+                    <span v-if="loginUserId == comment.user.id" class="flex">
+                        <template v-if="editCommentId !== comment.id">
+                               <!-- Edit Icon -->
+                               <span class="cursor-pointer mr-2" @click="$emit('setEditCommentId', comment.id)">
+                                <EditIcon />
+                            </span>
+                            <!-- Delete Icon -->
+                            <span class="cursor-pointer" @click="deleteComment(comment.id)">
+                                <DeleteIcon />
+                            </span>
+                        </template>
+                        <template v-else>
+                            <!-- Check Icon -->
+                            <span class="cursor-pointer mr-2" @click="$emit('updateComment', comment.comment)">
+                                <CheckIcon />
+                            </span>
+                            <!-- Close Icon -->
+                            <span class="cursor-pointer" @click="$emit('close')">
+                                <CloseIcon />
+                            </span>
+                        </template>
+                    </span>
                 </div>
+
             </div>
 
-            <p class="fst-italic">{{ comment.comment }}</p>
-            <div class="d-flex justify-content-between mt-1">
+            <p class="fst-italic" v-if="editCommentId != comment.id">
+                {{ comment.comment }}
+            </p>
+            <div
+                class="d-flex justify-content-between mt-1"
+                v-if="editCommentId != comment.id"
+            >
                 <span
                     class="cursor-pointer text-primary"
                     @click="toggleReplyForm"
@@ -63,13 +122,21 @@
                     <span class="ml-2 mt-1">{{ comment.likeCount }}</span>
                 </div>
             </div>
+            <div v-else class="mt-3">
+                <textarea
+                    type="text"
+                    class="form-control border border-light rounded-2"
+                    id="content"
+                    placeholder="Enter comment"
+                    v-model="comment.comment"
+                    name="content"
+                    rows="5"
+                    required
+                />
+            </div>
             <AddComment
                 v-if="activeCommentId === comment.id"
-                @addComment="
-                    (val) => {
-                        emits('addCommentDetail', val);
-                    }
-                "
+                @addComment="emits('addCommentDetail', $event)"
                 :isClearForm="isClearForm"
                 :parentId="comment.id"
             />
@@ -85,19 +152,15 @@
             :key="child.id"
             :comment="child"
             :activeCommentId="activeCommentId"
+            :editCommentId="editCommentId"
             :loginUserId="props.loginUserId"
-            @addCommentDetail="
-                (val) => {
-                    emits('addCommentDetail', val);
-                }
-            "
-            @setActiveComment="
-                (val) => {
-                    emits('setActiveComment', val);
-                }
-            "
+            @addCommentDetail="emits('addCommentDetail', $event)"
+            @setActiveComment="emits('setActiveComment', $event)"
+            @setEditCommentId="emits('setEditCommentId', $event)"
             @commentLikeDisLike="handleLikeDislike"
             @deletComment="deleteComment"
+            @updateComment="emits('updateComment', $event)"
+            @close="emits('close')"
         />
     </div>
 </template>
@@ -110,13 +173,24 @@ import UpArrowIcon from "@/Icon/UpArrowIcon.vue";
 import AddComment from "./AddComment.vue";
 import { nextTick, ref } from "vue";
 import DeleteIcon from "@/Icon/DeleteIcon.vue";
+import EditIcon from "@/Icon/EditIcon.vue";
+import CheckIcon from "@/Icon/CheckIcon.vue";
+import CloseIcon from "@/Icon/CloseIcon.vue";
 
-const props = defineProps(["comment", "activeCommentId","loginUserId"]);
+const props = defineProps([
+    "comment",
+    "activeCommentId",
+    "loginUserId",
+    "editCommentId",
+    "updateComment",
+]);
 const emits = defineEmits([
     "commentLikeDisLike",
     "setActiveComment",
     "addCommentDetail",
-    "deletComment"
+    "deletComment",
+    "setEditCommentId",
+    "close",
 ]);
 const viewChildComment = ref(false);
 const childCommentsContainer = ref(null);
@@ -148,9 +222,9 @@ const toggleChildComment = () => {
 };
 
 const deleteComment = (id) => {
-    console.log('id: ', id);
-    emits("deletComment",id);
-}
+    console.log("id: ", id);
+    emits("deletComment", id);
+};
 </script>
 
 <style scoped>

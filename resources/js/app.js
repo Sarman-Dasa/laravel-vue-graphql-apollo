@@ -5,7 +5,7 @@ import 'bootstrap'; // Optional: If you're using Bootstrap
 
 import { createApp, h } from 'vue';
 import { DefaultApolloClient } from '@vue/apollo-composable'; // For Apollo composables
-import { createInertiaApp } from '@inertiajs/vue3'; // Inertia.js for Vue 3
+import { createInertiaApp, Head } from '@inertiajs/vue3'; // Inertia.js for Vue 3
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { ZiggyVue } from '../../vendor/tightenco/ziggy';
 import { ApolloClient, createHttpLink, InMemoryCache } from '@apollo/client/core'; // Apollo dependencies
@@ -43,6 +43,7 @@ createInertiaApp({
     vueApp
       .use(plugin)
       .use(ZiggyVue)
+      .component('Head',Head)
       .provide(DefaultApolloClient, apolloClient)
       .mount(el); // Mount the app to the DOM
   },
